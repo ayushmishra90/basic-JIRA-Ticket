@@ -1,0 +1,12 @@
+# Compiled binary
+/ticket-system
+ticket-system
+*.exe
+
+# Local environment
+.env
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
