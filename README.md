@@ -10,11 +10,10 @@ Built with the Go standard library plus a single well-known dependency for JWTs.
 
 ## Submission links
 
-> Fill these in before submitting.
 
-- **GitHub repository:** `https://github.com/<you>/ticket-system`
-- **Deployed application URL:** `https://<your-app>.onrender.com`
-- **Public health check:** `https://<your-app>.onrender.com/health`
+- **GitHub repository:** `https://github.com/ayushmishra90/basic-JIRA-Ticket`
+- **Deployed application URL:** `https://basic-jira-ticket.onrender.com`
+- **Public health check:** `https://basic-jira-ticket.onrender.com/health`
 
 ---
 
