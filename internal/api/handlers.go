@@ -39,6 +39,13 @@ type updateStatusRequest struct {
 	Status string `json:"status"`
 }
 
+type refreshToken struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+type logoutRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
 // ---- Handlers ----
 
 // handleHealth -> GET /health
@@ -102,12 +109,82 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := s.auth.Generate(u.ID)
+	access, err := s.auth.Generate(u.ID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "could not issue token")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"token": token})
+
+	refresh, err := s.auth.GenerateRefresh(u.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not issue token refresh")
+		return
+	}
+	claims, err := s.auth.ParseRefresh(refresh)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not parse refresh token")
+		return
+	}
+	s.store.SaveRefreshToken(
+		u.ID,
+		refresh,
+		claims.ExpiresAt.Time,
+	)
+	writeJSON(w, http.StatusOK, map[string]any{"access": access, "refresh" : refresh})
+}
+
+func (s *Server) handleRefreshAccess(w http.ResponseWriter, r *http.Request) {
+	var c refreshToken
+	if err := decodeJSON(r, &c); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	//verify refresh token is correct
+	refresh, err := s.auth.ParseRefresh(c.RefreshToken)
+	if err != nil{
+		writeError(w, http.StatusUnauthorized, "invalid refresh token")
+		return
+	}
+	_, er := s.store.GetRefresh(c.RefreshToken)
+
+	if er != nil{
+		writeError(w, http.StatusNotFound, "token not found")
+		return
+	}
+	access, err := s.auth.Generate(refresh.UserID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not issue token")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"access": access})
+
+}
+
+func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
+	var req logoutRequest
+
+	if err := decodeJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	// Verify the JWT
+	_, err := s.auth.ParseRefresh(req.RefreshToken)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "invalid refresh token")
+		return
+	}
+
+	// Remove it from storage
+	err = s.store.DeleteRefreshToken(req.RefreshToken)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "refresh token not found")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"message": "logged out successfully",
+	})
 }
 
 // handleCreateTicket -> POST /tickets

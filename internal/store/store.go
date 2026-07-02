@@ -15,6 +15,7 @@ var (
 	ErrUserExists     = errors.New("user already exists")
 	ErrUserNotFound   = errors.New("user not found")
 	ErrTicketNotFound = errors.New("ticket not found")
+	ErrTokenNotFound  = errors.New("token not found")
 )
 
 // Store is a concurrency-safe, in-memory persistence layer.
@@ -29,7 +30,10 @@ type Store struct {
 	tickets      map[int]*models.Ticket
 	nextUserID   int
 	nextTicketID int
+	refreshToken map[string]*models.RefreshToken
 }
+
+
 
 // New returns an empty, ready-to-use store.
 func New() *Store {
@@ -38,8 +42,10 @@ func New() *Store {
 		tickets:      make(map[int]*models.Ticket),
 		nextUserID:   1,
 		nextTicketID: 1,
+		refreshToken: make(map[string]*models.RefreshToken),
 	}
 }
+
 
 func normalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
@@ -100,6 +106,30 @@ func (s *Store) CreateTicket(userID int, title, description string) models.Ticke
 	return *t
 }
 
+func(s *Store) SaveRefreshToken(userID int,token string, expiry time.Time) {
+
+	s.mu.Lock()
+    defer s.mu.Unlock()
+	r:= &models.RefreshToken{
+		UserID: userID,
+		Token: token,
+		Expiry: expiry,
+	}
+	s.refreshToken[r.Token] = r
+}
+
+func (s *Store) GetRefresh(token string) (models.RefreshToken, error) {
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	u, ok := s.refreshToken[token]
+	if !ok {
+		return models.RefreshToken{}, ErrTokenNotFound
+	}
+	return *u, nil
+}
+
 // ListTicketsByUser returns all tickets owned by userID, ordered by ID.
 func (s *Store) ListTicketsByUser(userID int) []models.Ticket {
 	s.mu.RLock()
@@ -113,6 +143,18 @@ func (s *Store) ListTicketsByUser(userID int) []models.Ticket {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out
+}
+
+func (s *Store) DeleteRefreshToken(token string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, ok := s.refreshToken[token]; !ok {
+		return ErrTokenNotFound
+	}
+
+	delete(s.refreshToken, token)
+	return nil
 }
 
 // GetTicket fetches a ticket by ID regardless of owner. Ownership checks are

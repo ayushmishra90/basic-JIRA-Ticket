@@ -30,6 +30,11 @@ type Ticket struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
+type RefreshToken struct {
+	Token     string    `json:"token"`
+	UserID    int       `json:"user_id"`
+	Expiry    time.Time `json:"expiry"`
+}
 // IsValidStatus reports whether s is one of the supported statuses.
 func IsValidStatus(s Status) bool {
 	switch s {

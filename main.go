@@ -29,7 +29,7 @@ func main() {
 	}
 
 	st := store.New()
-	tokens := auth.NewManager(secret, 24*time.Hour)
+	tokens := auth.NewManager(secret, 15*time.Minute, 24*time.Hour)
 	server := api.NewServer(st, tokens)
 
 	httpServer := &http.Server{

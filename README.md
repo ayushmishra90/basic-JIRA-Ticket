@@ -62,6 +62,8 @@ All request and response bodies are JSON. Protected endpoints require an
 | GET    | `/health`                 |  No  | Health check                  |
 | POST   | `/auth/register`          |  No  | Register a user               |
 | POST   | `/auth/login`             |  No  | Log in, returns a JWT         |
+| POST   | `/auth/refresh`           |  No  | refresh, returns a JWT        |
+| POST   | `/auth/logout`            |  No  | logged out        |
 | POST   | `/tickets`                | Yes  | Create a ticket               |
 | GET    | `/tickets`                | Yes  | List the caller's tickets     |
 | GET    | `/tickets/{id}`           | Yes  | Get one of the caller's tickets |

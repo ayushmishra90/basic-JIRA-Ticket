@@ -30,12 +30,15 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /health", s.handleHealth)
 	mux.HandleFunc("POST /auth/register", s.handleRegister)
 	mux.HandleFunc("POST /auth/login", s.handleLogin)
+	mux.HandleFunc("POST /auth/refresh",s.handleRefreshAccess)
+	mux.HandleFunc("POST /auth/logout", s.handleLogout)
 
 	// Protected routes (require a valid Bearer token).
 	mux.Handle("POST /tickets", s.authMiddleware(http.HandlerFunc(s.handleCreateTicket)))
 	mux.Handle("GET /tickets", s.authMiddleware(http.HandlerFunc(s.handleListTickets)))
 	mux.Handle("GET /tickets/{id}", s.authMiddleware(http.HandlerFunc(s.handleGetTicket)))
 	mux.Handle("PATCH /tickets/{id}/status", s.authMiddleware(http.HandlerFunc(s.handleUpdateStatus)))
+
 
 	return mux
 }
